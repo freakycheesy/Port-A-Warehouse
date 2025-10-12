@@ -46,15 +46,20 @@ namespace Port_A_Warehouse
         }
 
         private void AddItems() {
-            CratePage.CreateString("Search Query", Color.green, searchquery, (a) => { searchquery = a; Refresh(); });
-            CreatePages<Crate>(typeof(Crate).Name, out AllCratesPages);
-            CreatePages<SpawnableCrate>(typeof(SpawnableCrate).Name, out SpawnablesCratesPages);
-            CreatePages<LevelCrate>(typeof(LevelCrate).Name, out LevelsCratesPages);
-            CreatePages<AvatarCrate>(typeof(AvatarCrate).Name, out AvatarsCratesPages);
+            CratePage.CreateString("Search Query", Color.green, searchquery, Search).ElementTooltip = "Can lag alot if the search query has tons of results,\nor if you don't search anything at all to see everything";
+            CreatePages<Crate>(typeof(Crate).Name, typeof(Crate).Name, out AllCratesPages);
+            CreatePages<SpawnableCrate>(typeof(SpawnableCrate).Name, "Select Spawnable", out SpawnablesCratesPages, "Selects the spawnable on all spawn guns");
+            CreatePages<LevelCrate>(typeof(LevelCrate).Name, "Load Level", out LevelsCratesPages, "Loads the level directly");
+            CreatePages<AvatarCrate>(typeof(AvatarCrate).Name, "Swap Avatar", out AvatarsCratesPages, "Swaps your avatar directly");
             
         }
 
-        public void CreatePages<T>(string label, out Page page) where T : Crate {
+        public void Search(string query) {
+            searchquery = query;
+            Refresh();
+        }
+
+        public void CreatePages<T>(string label, string buttonName, out Page page, string buttonTooltip = "") where T : Crate {
             page = CratePage.CreatePage(label, Color.white);
             var crates = GetCleanList(AssetWarehouse.Instance.GetCrates<T>());
             List<T> selectedCrates = crates;
@@ -65,7 +70,8 @@ namespace Port_A_Warehouse
             }
             foreach (var c in selectedCrates) {
                 var cratePage = page.CreatePage($"{c._title}\n({c._barcode._id})", Color.white);
-                cratePage.CreateFunction(label, Color.white, ()=>OnCrateClickClick(c));
+                cratePage.CreateFunction(buttonName, Color.white, () => OnCrateClickClick(c)).ElementTooltip = buttonTooltip;
+                ;
             }
         }
 
