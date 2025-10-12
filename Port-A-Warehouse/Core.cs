@@ -47,7 +47,7 @@ namespace Port_A_Warehouse
 
         private void AddItems() {
             CratePage.CreateString("Search Query", Color.green, searchquery, Search).ElementTooltip = "Can lag alot if the search query has tons of results,\nor if you don't search anything at all to see everything";
-            CreatePages<Crate>(typeof(Crate).Name, typeof(Crate).Name, out AllCratesPages, "something idk");
+            CreatePages<Crate>(typeof(Crate).Name, "Preview Only (No Function)", out AllCratesPages, "i just said preview bud");
             CreatePages<SpawnableCrate>(typeof(SpawnableCrate).Name, "Select Spawnable", out SpawnablesCratesPages, "Selects the spawnable on all spawn guns");
             CreatePages<LevelCrate>(typeof(LevelCrate).Name, "Load Level", out LevelsCratesPages, "Loads the level directly");
             CreatePages<AvatarCrate>(typeof(AvatarCrate).Name, "Swap Avatar", out AvatarsCratesPages, "Swaps your avatar directly");
