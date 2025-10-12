@@ -91,6 +91,7 @@ namespace Port_A_Warehouse {
                     a._lastSelectedCrate = c as SpawnableCrate;
                     a._selectedCrate = c as SpawnableCrate;
                 });
+                return;
             }
             if (c is LevelCrate) {
                 SceneStreamer.Load(c.Barcode);
