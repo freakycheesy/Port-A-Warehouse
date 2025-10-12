@@ -47,7 +47,7 @@ namespace Port_A_Warehouse
 
         private void AddItems() {
             CratePage.CreateString("Search Query", Color.green, searchquery, Search).ElementTooltip = "Can lag alot if the search query has tons of results,\nor if you don't search anything at all to see everything";
-            CreatePages<Crate>(typeof(Crate).Name, typeof(Crate).Name, out AllCratesPages);
+            CreatePages<Crate>(typeof(Crate).Name, typeof(Crate).Name, out AllCratesPages, "something idk");
             CreatePages<SpawnableCrate>(typeof(SpawnableCrate).Name, "Select Spawnable", out SpawnablesCratesPages, "Selects the spawnable on all spawn guns");
             CreatePages<LevelCrate>(typeof(LevelCrate).Name, "Load Level", out LevelsCratesPages, "Loads the level directly");
             CreatePages<AvatarCrate>(typeof(AvatarCrate).Name, "Swap Avatar", out AvatarsCratesPages, "Swaps your avatar directly");
@@ -76,17 +76,17 @@ namespace Port_A_Warehouse
         }
 
         private void OnCrateClickClick<T>(T c) where T : Crate {
-            if (typeof(T) == typeof(SpawnableCrate)) {
+            if (c is SpawnableCrate) {
                 Behaviour.FindObjectsOfType<Il2CppSLZ.Bonelab.SpawnGun>().ToList().ForEach((a) => {
                     a._selectedCrate = c as SpawnableCrate;
                     a._lastSelectedCrate = c as SpawnableCrate;
                     a._selectedCrate = c as SpawnableCrate;
                 });
             }
-            else if (typeof(T) == typeof(LevelCrate)) {
+            else if (c is LevelCrate) {
                 SceneStreamer.Load(c.Barcode);
             }
-            else if (typeof(T) == typeof(AvatarCrate)) {
+            else if (c is AvatarCrate) {
                 Player.RigManager.SwapAvatarCrate(c.Barcode);
             }
         }
