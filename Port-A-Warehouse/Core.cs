@@ -4,6 +4,7 @@ using Il2CppSLZ.Marrow.SceneStreaming;
 using Il2CppSLZ.Marrow.Warehouse;
 using Il2CppWebSocketSharp;
 using MelonLoader;
+using System.Threading.Tasks;
 using UnityEngine;
 
 [assembly: MelonInfo(typeof(Port_A_Warehouse.Core), "Port-A-Warehouse", "1.0.0", "freakycheesy", null)]
@@ -62,46 +63,23 @@ namespace Port_A_Warehouse {
             filters.CreateBool("Show Internal", Color.white, ShowInternal, (a) => ShowInternal = a);
             filters.CreateBool("Show Unlockable", Color.white, ShowUnlockable, (a) => ShowUnlockable = a);
         }
-        public static Thread RefreshThread { get; private set; }
+        public static Task RefreshTask;
         public void Refresh() {
-            try {
-                RefreshThread ??= new ((a)=> GlobalHandler(_RefreshThread));
-                RefreshThread.IsBackground = true;
-                RefreshThread?.Start();
-            }
-            catch (ThreadInterruptedException exception) {
-                MelonLogger.Error("[REFRESH] THREAD ERROR", exception);
-            }
+            RefreshTask = Task.Factory.StartNew(_RefreshThread);
         }
-        public static void GlobalHandler(ThreadStart threadStartTarget) {
-            try {
-                threadStartTarget.Invoke();
-            }
-            catch (Exception ex) {
-                MelonLogger.Error("[REFRESH] THREAD ERROR", ex);
-            }
-        }
-        private void _RefreshThread() {
+        private async void _RefreshThread() {
             ClearPages();
-            try {
-                AddCrateElementsToPage(CratePage);
-                CreatePalletPages(PalletPage);
-            }
-            catch (Exception exception) {
-                MelonLogger.Error("[REFRESH] REFRESH THREAD ERROR", exception);
-            }
+            AddCrateElementsToPage(CratePage);
+            CreatePalletPages(PalletPage);
+            await RefreshTask;
+            MelonLogger.Msg("Done Loading");
         }
 
         private void AddCrateElementsToPage(Page page) {
-            try {
-                CreateCratePages(typeof(Crate).Name, "action", AssetWarehouse.Instance.GetCrates(), CratePage, out AllCratesPages);
-                CreateCratePages(typeof(SpawnableCrate).Name, "Select Spawnable", AssetWarehouse.Instance.GetCrates<SpawnableCrate>(), CratePage, out SpawnablesCratesPages);
-                CreateCratePages(typeof(LevelCrate).Name, "Load Level", AssetWarehouse.Instance.GetCrates<LevelCrate>(), CratePage, out LevelsCratesPages);
-                CreateCratePages(typeof(AvatarCrate).Name, "Swap Avatar", AssetWarehouse.Instance.GetCrates<AvatarCrate>(), CratePage, out AvatarsCratesPages);
-            }
-            catch (Exception exception) {
-                MelonLogger.Error("[REFRESH] Crate Elements Error", exception);
-            }
+            CreateCratePages(typeof(Crate).Name, "action", AssetWarehouse.Instance.GetCrates(), CratePage, out AllCratesPages);
+            CreateCratePages(typeof(SpawnableCrate).Name, "Select Spawnable", AssetWarehouse.Instance.GetCrates<SpawnableCrate>(), CratePage, out SpawnablesCratesPages);
+            CreateCratePages(typeof(LevelCrate).Name, "Load Level", AssetWarehouse.Instance.GetCrates<LevelCrate>(), CratePage, out LevelsCratesPages);
+            CreateCratePages(typeof(AvatarCrate).Name, "Swap Avatar", AssetWarehouse.Instance.GetCrates<AvatarCrate>(), CratePage, out AvatarsCratesPages);
         }
 
         public void Search(string query) {
@@ -137,7 +115,7 @@ namespace Port_A_Warehouse {
             selectedCrates.RemoveAll(x => x.Unlockable && !ShowUnlockable);
             if (!searchquery.IsNullOrEmpty()) {
                 var comparison = CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
-                Predicate<T> match = x => x._barcode._id.Contains(searchquery, comparison) && IncludeBarcodes|| x._tags.Contains(searchquery) && IncludeTags || x._title.Contains(searchquery, comparison) && IncludeTitles|| x._pallet.Author.Contains(searchquery, comparison) && IncludeAuthors;
+                Predicate<T> match = x => x._barcode._id.Contains(searchquery, comparison) && IncludeBarcodes || x._tags.Contains(searchquery) && IncludeTags || x._title.Contains(searchquery, comparison) && IncludeTitles || x._pallet.Author.Contains(searchquery, comparison) && IncludeAuthors;
 
                 var foundCrates = selectedCrates.FindAll(match);
                 selectedCrates = foundCrates;
