@@ -37,6 +37,15 @@ namespace Port_A_Warehouse {
             foreach (var crate in WarehouseData.Crates) {
                 CreateCratePage(crate);
             }
+            foreach (var crate in WarehouseData.ScCrates) {
+                CreateCratePage(crate);
+            }
+            foreach (var crate in WarehouseData.AcCrates) {
+                CreateCratePage(crate);
+            }
+            foreach (var crate in WarehouseData.LcCrates) {
+                CreateCratePage(crate);
+            }
         }
 
         private void BoneMenuCreator() {
@@ -76,15 +85,15 @@ namespace Port_A_Warehouse {
             Refresh();
         }
 
-        private void CreateCratePage(Crate crate) {
+        private void CreateCratePage<T>(T crate) where T : Crate {
             var pallet = crate.Pallet;
             var palletPage = PalletsPage.CreatePage($"{pallet._title}\n({pallet._barcode._id})", Color.green);
-            var typePage = palletPage.CreatePage(crate.AssetType.Name, Color.cyan);
+            var typePage = palletPage.CreatePage(typeof(T).Name, Color.cyan);
             var cratePage = typePage.CreatePage($"{crate._title}\n({crate._barcode._id})", Color.cyan);
             cratePage.CreateFunction("Load Asset", Color.white, () => LoadCrateAsset(crate));
         }
 
-        private void LoadCrateAsset(Crate crate) {
+        private void LoadCrateAsset<T>(T crate) where T : Crate {
             if (crate is LevelCrate)
                 LoadLevel(crate);
             if (crate is AvatarCrate)
@@ -94,14 +103,17 @@ namespace Port_A_Warehouse {
         }
 
         public void LoadLevel(Crate value) {
+            MelonLogger.Msg("Trying to Load Scene");
             SceneStreamer.Load(value.Barcode);
         }
 
         public void SelectSpawnable(Crate value) {
+            MelonLogger.Msg("Trying to Select Spawnable");
             SpawnGunPatch.SwapGlobalCrate(value as SpawnableCrate);
         }
 
         public void SwapAvatar(Crate value) {
+            MelonLogger.Msg("Trying to Swap Avatar");
             Player.RigManager.SwapAvatarCrate(value.Barcode);
         }
 
