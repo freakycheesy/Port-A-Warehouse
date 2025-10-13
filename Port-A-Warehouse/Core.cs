@@ -65,13 +65,12 @@ namespace Port_A_Warehouse {
         }
         public static Task RefreshTask;
         public void Refresh() {
-            RefreshTask = Task.Factory.StartNew(_RefreshThread);
+            _RefreshThread();
         }
         private async void _RefreshThread() {
             ClearPages();
             AddCrateElementsToPage(CratePage);
             CreatePalletPages(PalletPage);
-            await RefreshTask;
             MelonLogger.Msg("Done Loading");
         }
 
