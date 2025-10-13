@@ -1,5 +1,6 @@
 ﻿using BoneLib;
 using BoneLib.BoneMenu;
+using BoneLib.Notifications;
 using Il2CppSLZ.Marrow.SceneStreaming;
 using Il2CppSLZ.Marrow.Warehouse;
 using Il2CppWebSocketSharp;
@@ -33,6 +34,8 @@ namespace Port_A_Warehouse {
         }
 
         private void CreateCratesPage() {
+            PalletsPage.Name = "Pallets";
+            PalletsPage.Color = Color.green;
             foreach (var crate in WarehouseData.Crates) {
                 CreateCratePage(crate);
             }
@@ -44,7 +47,6 @@ namespace Port_A_Warehouse {
             Page.CreateString("Search Query", Color.green, SearchQuery, Search);
             FitlerOptions();
             QueryOptions();
-
             PalletsPage = Page.CreatePage("Pallets", Color.green);
         }
 
@@ -67,7 +69,10 @@ namespace Port_A_Warehouse {
             _RefreshThread();
         }
         private async void _RefreshThread() {
-            ClearPages();
+            PalletsPage.RemoveAll();
+            PalletsPage.Name = "DONT CLICK";
+            PalletsPage.Color = Color.red;
+
             WarehouseData.GenerateCratesData();
         }
 
@@ -79,26 +84,23 @@ namespace Port_A_Warehouse {
         private void CreateCratePage<T>(T crate) where T : Crate {
             var pallet = crate.Pallet;
             var palletPage = PalletsPage.CreatePage($"{pallet._title}\n({pallet._barcode._id})", Color.green);
-            var typePage = palletPage.CreatePage(typeof(T).Name, Color.white);
-            var cratePage = typePage.CreatePage($"{crate._title}\n({crate._barcode._id})", Color.white);
-            cratePage.CreateFunction("Load Level", Color.white, () => LoadLevel(crate));
-            cratePage.CreateFunction("Select Spawnable", Color.white, () => SelectSpawnable(crate));
-            cratePage.CreateFunction("Swap Avatar", Color.white, () => SwapAvatar(crate));
+            var typePage = palletPage.CreatePage(typeof(T).Name, Color.cyan);
+            var cratePage = typePage.CreatePage($"{crate._title}\n({crate._barcode._id})", Color.cyan);
+            cratePage.CreateFunction("Load Level", Color.white, () => LoadLevel(crate as LevelCrate));
+            cratePage.CreateFunction("Select Spawnable", Color.white, () => SelectSpawnable(crate as SpawnableCrate));
+            cratePage.CreateFunction("Swap Avatar", Color.white, () => SwapAvatar(crate as AvatarCrate));
         }
 
-        public void LoadLevel(Crate value) {
-            if(value is LevelCrate)
-                SceneStreamer.Load(value.Barcode);
+        public void LoadLevel(LevelCrate value) {
+            SceneStreamer.Load(value.Barcode);
         }
 
-        public void SelectSpawnable(Crate value) {
-            if (value is SpawnableCrate)
-                SpawnGunPatch.SwapGlobalCrate(value as SpawnableCrate);
+        public void SelectSpawnable(SpawnableCrate value) {
+            SpawnGunPatch.SwapGlobalCrate(value);
         }
 
-        public void SwapAvatar(Crate value) {
-            if (value is AvatarCrate)
-                Player.RigManager.SwapAvatarCrate(value.Barcode);
+        public void SwapAvatar(AvatarCrate value) {
+            Player.RigManager.SwapAvatarCrate(value.Barcode);
         }
 
         public static List<T> GetCleanList<T>(Il2CppSystem.Collections.Generic.List<T> dirtyList) {
@@ -106,10 +108,6 @@ namespace Port_A_Warehouse {
             List<T> list = [.. dirtyList];
             dirtyList.Clear();
             return list;
-        }
-
-        private static void ClearPages() {
-            PalletsPage.RemoveAll();
         }
     }
 }
