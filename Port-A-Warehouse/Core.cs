@@ -15,8 +15,6 @@ namespace Port_A_Warehouse {
         public static Page Page;
         public static Page PalletsPage;
 
-        public static Page AllCratesPages;
-
         public static bool ShowRedacted { get; set; } = true;
         public static bool ShowInternal { get; set; } = true;
         public static bool ShowUnlockable { get; set; } = true;
@@ -30,8 +28,14 @@ namespace Port_A_Warehouse {
         public static string SearchQuery;
         public override void OnInitializeMelon() {
             LoggerInstance.Msg("Initialized.");
-            WarehouseData.OnCrateFound += CreateCratePage;
+            WarehouseData.OnCratesGenerated += CreateCratesPage;
             BoneMenuCreator();
+        }
+
+        private void CreateCratesPage() {
+            foreach (var crate in WarehouseData.Crates) {
+                CreateCratePage(crate);
+            }
         }
 
         private void BoneMenuCreator() {
@@ -42,7 +46,6 @@ namespace Port_A_Warehouse {
             QueryOptions();
 
             PalletsPage = Page.CreatePage("Pallets", Color.green);
-            AllCratesPages = Page.CreatePage("All Crates", Color.green);
         }
 
         private static void QueryOptions() {
@@ -65,7 +68,7 @@ namespace Port_A_Warehouse {
         }
         private async void _RefreshThread() {
             ClearPages();
-            WarehouseData.GeneratePalletData();
+            WarehouseData.GenerateCratesData();
         }
 
         public void Search(string query) {
@@ -73,28 +76,25 @@ namespace Port_A_Warehouse {
             Refresh();
         }
 
-        public void CreatePalletPage(Pallet pallet, Page parentPage) {
-            var page = parentPage.CreatePage($"{pallet._title}\n({pallet._barcode._id})", Color.green);
-        }
-
-        private void CreateCratePage(Crate crate) {
-            var palletPage = PalletsPage.CreatePage($"{crate.Pallet._title}\n({crate.Pallet._barcode._id})", Color.green);
-            var typePage = palletPage.CreatePage(crate.GetType().Name, Color.white);
+        private void CreateCratePage<T>(T crate) where T : Crate {
+            var pallet = crate.Pallet;
+            var palletPage = PalletsPage.CreatePage($"{pallet._title}\n({pallet._barcode._id})", Color.green);
+            var typePage = palletPage.CreatePage(typeof(T).Name, Color.white);
             var cratePage = typePage.CreatePage($"{crate._title}\n({crate._barcode._id})", Color.white);
             cratePage.CreateFunction("Load Asset", Color.white, () => OnCrateClick(crate));
-            AllCratesPages.CreatePageLink(cratePage);
         }
 
         private void OnCrateClick<T>(T c) where T : Crate {
-            if (c is SpawnableCrate) {
-                if (c is AvatarCrate) {
+            Type crateType = typeof(T);
+            if (crateType == typeof(SpawnableCrate)) {
+                if (crateType == typeof(AvatarCrate)) {
                     Player.RigManager.SwapAvatarCrate(c.Barcode);
                     return;
                 }
                 SpawnGunPatch.SwapGlobalCrate(c as SpawnableCrate);
                 return;
             }
-            if (c is LevelCrate) {
+            if (crateType == typeof(LevelCrate)) {
                 SceneStreamer.Load(c.Barcode);
                 return;
             }
