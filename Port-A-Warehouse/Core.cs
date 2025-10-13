@@ -13,7 +13,7 @@ using UnityEngine;
 namespace Port_A_Warehouse {
     public class Core : MelonMod {
         public static Page Page;
-        public static Page PalletPage;
+        public static Page PalletsPage;
 
         public static Page AllCratesPages;
 
@@ -30,7 +30,7 @@ namespace Port_A_Warehouse {
         public static string SearchQuery;
         public override void OnInitializeMelon() {
             LoggerInstance.Msg("Initialized.");
-            WarehouseData.OnPalletGenerated += (_)=>CreatePalletPage(_, PalletPage);
+            WarehouseData.OnCrateFound += CreateCratePage;
             BoneMenuCreator();
         }
 
@@ -41,7 +41,7 @@ namespace Port_A_Warehouse {
             FitlerOptions();
             QueryOptions();
 
-            PalletPage = Page.CreatePage("Pallets", Color.green);
+            PalletsPage = Page.CreatePage("Pallets", Color.green);
             AllCratesPages = Page.CreatePage("All Crates", Color.green);
         }
 
@@ -75,26 +75,14 @@ namespace Port_A_Warehouse {
 
         public void CreatePalletPage(Pallet pallet, Page parentPage) {
             var page = parentPage.CreatePage($"{pallet._title}\n({pallet._barcode._id})", Color.green);
-            CreateCratesPage(pallet, page);
         }
 
-        private void CreateCratesPage(Pallet pallet, Page parentPage) {
-            var crates = GetCleanList(pallet.Crates);
-            crates.RemoveAll(x => x.Redacted && !ShowRedacted);
-            crates.RemoveAll(x => x.Pallet.Internal && !ShowInternal);
-            crates.RemoveAll(x => x.Unlockable && !ShowUnlockable);
-            if (!SearchQuery.IsNullOrEmpty()) {
-                var comparison = CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
-                Predicate<Crate> match = x => x._barcode._id.Contains(SearchQuery, comparison) && IncludeBarcodes || x._tags.Contains(SearchQuery) && IncludeTags || x._title.Contains(SearchQuery, comparison) && IncludeTitles || x._pallet.Author.Contains(SearchQuery, comparison) && IncludeAuthors;
-
-                crates = crates.FindAll(match);
-            }
-            foreach (var crate in crates) {
-                var typePage = parentPage.CreatePage(crate.GetType().Name, Color.white);
-                var cratePage = typePage.CreatePage($"{crate._title}\n({crate._barcode._id})", Color.white);
-                AllCratesPages.CreatePageLink(cratePage);
-                cratePage.CreateFunction("Load Asset", Color.white, () => OnCrateClick(crate));
-            }
+        private void CreateCratePage(Crate crate) {
+            var palletPage = PalletsPage.CreatePage($"{crate.Pallet._title}\n({crate.Pallet._barcode._id})", Color.green);
+            var typePage = palletPage.CreatePage(crate.GetType().Name, Color.white);
+            var cratePage = typePage.CreatePage($"{crate._title}\n({crate._barcode._id})", Color.white);
+            cratePage.CreateFunction("Load Asset", Color.white, () => OnCrateClick(crate));
+            AllCratesPages.CreatePageLink(cratePage);
         }
 
         private void OnCrateClick<T>(T c) where T : Crate {
@@ -120,7 +108,7 @@ namespace Port_A_Warehouse {
         }
 
         private static void ClearPages() {
-            PalletPage.RemoveAll();
+            PalletsPage.RemoveAll();
         }
     }
 }

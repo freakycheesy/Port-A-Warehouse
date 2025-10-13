@@ -5,27 +5,27 @@ using Il2CppWebSocketSharp;
 using MelonLoader;
 namespace Port_A_Warehouse {
     public static class WarehouseData {
-        public static List<Pallet> Pallets = new();
-        public static Action<Pallet> OnPalletGenerated;
+        public static List<Crate> Crates = new();
+        public static Action<Crate> OnCrateFound;
 
         public static async void GeneratePalletData() {
             var task = Task.Factory.StartNew(GeneratePalletDataTask);
         }
 
         private static void GeneratePalletDataTask() {
-            Pallets.Clear();
+            Crates.Clear();
 
-            Pallets = Core.GetCleanList(AssetWarehouse.Instance.GetPallets());
-            Pallets.RemoveAll(x => x.Redacted && !Core.ShowRedacted);
-            Pallets.RemoveAll(x => x.Internal && !Core.ShowInternal);
-            Pallets.RemoveAll(x => x.Unlockable && !Core.ShowUnlockable);
+            Crates = Core.GetCleanList(AssetWarehouse.Instance.GetCrates());
+            Crates.RemoveAll(x => x.Redacted && !Core.ShowRedacted);
+            Crates.RemoveAll(x => x.Pallet.Internal && !Core.ShowInternal);
+            Crates.RemoveAll(x => x.Unlockable && !Core.ShowUnlockable);
             if (!Core.SearchQuery.IsNullOrEmpty()) {
                 var comparison = Core.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
-                Predicate<Pallet> match = x => x._barcode._id.Contains(Core.SearchQuery, comparison) && Core.IncludeBarcodes || x._tags.Contains(Core.SearchQuery) && Core.IncludeTags || x._title.Contains(Core.SearchQuery, comparison) && Core.IncludeTitles || x.Author.Contains(Core.SearchQuery, comparison) && Core.IncludeAuthors;
-                Pallets = Pallets.ToList().FindAll(match);
+                Predicate<Crate> match = x => x._barcode._id.Contains(Core.SearchQuery, comparison) && Core.IncludeBarcodes || x._tags.Contains(Core.SearchQuery) && Core.IncludeTags || x._title.Contains(Core.SearchQuery, comparison) && Core.IncludeTitles || x.Pallet.Author.Contains(Core.SearchQuery, comparison) && Core.IncludeAuthors;
+                Crates = Crates.ToList().FindAll(match);
             }
-            foreach (var pallet in Pallets) {
-                OnPalletGenerated.Invoke(pallet);
+            foreach (var crate in Crates) {
+                OnCrateFound.Invoke(crate);
             }
             MelonLogger.Msg("Done Loading");
         }
