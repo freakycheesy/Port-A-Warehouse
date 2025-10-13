@@ -12,7 +12,9 @@ using UnityEngine;
 namespace Port_A_Warehouse {
     public class Core : MelonMod {
         public static Page Page;
+        public static Page PalletPage;
         public static Page CratePage;
+
         public static Page AllCratesPages;
         public static Page SpawnablesCratesPages;
         public static Page LevelsCratesPages;
@@ -20,6 +22,12 @@ namespace Port_A_Warehouse {
 
         public static bool ShowRedacted { get; set; } = true;
         public static bool ShowInternal { get; set; } = true;
+        public static bool ShowUnlockable { get; set; } = true;
+
+        public static bool IncludeBarcodes { get; set; } = true;
+        public static bool IncludeTags { get; set; } = true;
+        public static bool IncludeAuthors { get; set; } = true;
+        public static bool IncludeTitles { get; set; } = true;
         public static bool CaseSensitive { get; set; } = false;
 
         public static string searchquery;
@@ -37,24 +45,51 @@ namespace Port_A_Warehouse {
         private void BoneMenuCreator() {
             Page = Page.Root.CreatePage("Asset Warehouse", Color.red);
             Page.CreateFunction("Refresh", Color.green, Refresh);
-            Page.CreateBool("Show Redacted", Color.white, ShowRedacted, (a) => ShowRedacted = a);
-            Page.CreateBool("Show Internal", Color.white, ShowInternal, (a) => ShowInternal = a);
-            Page.CreateBool("Case Sensitive", Color.white, CaseSensitive, (a) => CaseSensitive = a);
+            CratePage.CreateString("Search Query", Color.green, searchquery, Search);
+            FitlerOptions();
+            QueryOptions();
+
+            PalletPage = Page.CreatePage("Crates", Color.green);
             CratePage = Page.CreatePage("Crates", Color.cyan);
             Refresh();
         }
 
-        private void Refresh() {
-            ClearPages();
-            AddItems();
+        private static void QueryOptions() {
+            var queryOptions = Page.CreatePage("Query Options", Color.white);
+            queryOptions.CreateBool("Include Barcodes", Color.white, IncludeBarcodes, (a) => IncludeBarcodes = a);
+            queryOptions.CreateBool("Include Tags", Color.white, IncludeTags, (a) => IncludeTags = a);
+            queryOptions.CreateBool("Include Authors", Color.white, IncludeAuthors, (a) => IncludeAuthors = a);
+            queryOptions.CreateBool("Include Titles", Color.white, IncludeTitles, (a) => IncludeTitles = a);
+            queryOptions.CreateBool("Case Sensitive", Color.white, CaseSensitive, (a) => CaseSensitive = a);
         }
 
-        private void AddItems() {
-            CratePage.CreateString("Search Query", Color.green, searchquery, Search).ElementTooltip = "Can lag alot if the search query has tons of results,\nor if you don't search anything at all to see everything";
-            CreatePages<Crate>(typeof(Crate).Name, "Preview Only (No Function)", out AllCratesPages, "i just said preview bud");
-            CreatePages<SpawnableCrate>(typeof(SpawnableCrate).Name, "Select Spawnable", out SpawnablesCratesPages, "Selects the spawnable on all spawn guns");
-            CreatePages<LevelCrate>(typeof(LevelCrate).Name, "Load Level", out LevelsCratesPages, "Loads the level directly");
-            CreatePages<AvatarCrate>(typeof(AvatarCrate).Name, "Swap Avatar", out AvatarsCratesPages, "Swaps your avatar directly");
+        private static void FitlerOptions() {
+            var filters = Page.CreatePage("Filters", Color.white);
+            filters.CreateBool("Show Redacted", Color.white, ShowRedacted, (a) => ShowRedacted = a);
+            filters.CreateBool("Show Internal", Color.white, ShowInternal, (a) => ShowInternal = a);
+            filters.CreateBool("Show Unlockable", Color.white, ShowUnlockable, (a) => ShowUnlockable = a);
+        }
+
+        public static Thread RefreshThread;
+        public void Refresh() {
+            if (RefreshThread == null) {
+                RefreshThread = new Thread(_RefreshThread);
+            }
+            if(RefreshThread.ThreadState != ThreadState.Running) RefreshThread?.Start();
+        }
+
+        private void _RefreshThread() {
+            ClearPages();
+            CreatePalletPages(PalletPage);
+            AddCrateElementsToPage(CratePage);
+        }
+
+        private void AddCrateElementsToPage(Page page) {
+            
+            CreateCratePages(typeof(Crate).Name, "action", AssetWarehouse.Instance.GetCrates(), CratePage, out AllCratesPages);
+            CreateCratePages(typeof(SpawnableCrate).Name, "Select Spawnable", AssetWarehouse.Instance.GetCrates<SpawnableCrate>(), CratePage, out SpawnablesCratesPages);
+            CreateCratePages(typeof(LevelCrate).Name, "Load Level", AssetWarehouse.Instance.GetCrates<LevelCrate>(), CratePage, out LevelsCratesPages);
+            CreateCratePages(typeof(AvatarCrate).Name, "Swap Avatar", AssetWarehouse.Instance.GetCrates<AvatarCrate>(), CratePage, out AvatarsCratesPages);
         }
 
         public void Search(string query) {
@@ -62,47 +97,64 @@ namespace Port_A_Warehouse {
             Refresh();
         }
 
-        public void CreatePages<T>(string label, string buttonName, out Page page, string buttonTooltip = "") where T : Crate {
-            page = CratePage.CreatePage(label, Color.white);
-            var crates = GetCleanList(AssetWarehouse.Instance.GetCrates<T>());
+        public void CreatePalletPages(Page parentPage) {
+            var pallets = GetCleanList(AssetWarehouse.Instance.GetPallets());
+            List<Pallet> selectedPallets = pallets;
+            selectedPallets.RemoveAll(x => x.Redacted && !ShowRedacted);
+            selectedPallets.RemoveAll(x => x.Internal && !ShowInternal);
+            selectedPallets.RemoveAll(x => x.Unlockable && !ShowUnlockable);
+            if (!searchquery.IsNullOrEmpty()) {
+                var comparison = CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+                Predicate<Pallet> match = x => x._barcode._id.Contains(searchquery, comparison) && IncludeBarcodes || x._tags.Contains(searchquery) && IncludeTags || x._title.Contains(searchquery, comparison) && IncludeTitles || x.Author.Contains(searchquery, comparison) && IncludeAuthors;
+
+                var foundPallets = pallets.FindAll(match);
+                selectedPallets = foundPallets;
+            }
+            foreach (var p in selectedPallets) {
+                var palletPage = parentPage.CreatePage($"{p._title}\n({p._barcode._id})", Color.green);
+                AddCrateElementsToPage(palletPage);
+            }
+        }
+
+        public void CreateCratePages<T>(string label, string buttonName, Il2CppSystem.Collections.Generic.List<T> dirtyList, Page parentPage, out Page page) where T : Crate {
+            page = parentPage.CreatePage(label, Color.white);
+            var crates = GetCleanList(dirtyList);
             List<T> selectedCrates = crates;
             selectedCrates.RemoveAll(x => x.Redacted && !ShowRedacted);
             selectedCrates.RemoveAll(x => x.Pallet.Internal && !ShowInternal);
+            selectedCrates.RemoveAll(x => x.Unlockable && !ShowUnlockable);
             if (!searchquery.IsNullOrEmpty()) {
                 var comparison = CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
-                Predicate<T> match = x => x._barcode._id.Contains(searchquery, comparison) || x._tags.Contains(searchquery) || x._title.Contains(searchquery, comparison) || x._pallet.Author.Contains(searchquery, comparison);
-                var foundCrates = crates.FindAll(match);
+                Predicate<T> match = x => x._barcode._id.Contains(searchquery, comparison) && IncludeBarcodes|| x._tags.Contains(searchquery) && IncludeTags || x._title.Contains(searchquery, comparison) && IncludeTitles|| x._pallet.Author.Contains(searchquery, comparison) && IncludeAuthors;
+
+                var foundCrates = selectedCrates.FindAll(match);
                 selectedCrates = foundCrates;
             }
             foreach (var c in selectedCrates) {
                 var cratePage = page.CreatePage($"{c._title}\n({c._barcode._id})", Color.white);
-                cratePage.CreateFunction(buttonName, Color.white, () => OnCrateClickClick(c)).ElementTooltip = buttonTooltip;
+                cratePage.CreateFunction(buttonName, Color.white, () => OnCrateClick(c));
             }
         }
 
-        private void OnCrateClickClick<T>(T c) where T : Crate {
+        private void OnCrateClick<T>(T c) where T : Crate {
             if (c is SpawnableCrate) {
                 if (c is AvatarCrate) {
                     Player.RigManager.SwapAvatarCrate(c.Barcode);
                     return;
                 }
-                Behaviour.FindObjectsOfType<Il2CppSLZ.Bonelab.SpawnGun>().ToList().ForEach((a) => {
-                    a._selectedCrate = c as SpawnableCrate;
-                    a._lastSelectedCrate = c as SpawnableCrate;
-                    a._selectedCrate = c as SpawnableCrate;
-                });
+                SpawnGunPatch.SwapGlobalCrate(c as SpawnableCrate);
                 return;
             }
             if (c is LevelCrate) {
                 SceneStreamer.Load(c.Barcode);
+                return;
             }
         }
 
         public static List<T> GetCleanList<T>(Il2CppSystem.Collections.Generic.List<T> dirtyList) {
-            List<T> list = new List<T>();
-            foreach (var dirtyItem in dirtyList) {
-                list.Add(dirtyItem);
-            }
+            // idk what this does, vs just gave me this
+            List<T> list = [.. dirtyList];
+            dirtyList.Clear();
             return list;
         }
 
