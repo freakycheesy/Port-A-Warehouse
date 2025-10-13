@@ -108,6 +108,7 @@ namespace Port_A_Warehouse {
             }
             foreach (var p in selectedPallets) {
                 var palletPage = parentPage.CreatePage($"{p._title}\n({p._barcode._id})", Color.green);
+                // Make sure to replace the crate search with pallet to crates
                 AddCrateElementsToPageFromPallet(palletPage, p);
             }
         }
