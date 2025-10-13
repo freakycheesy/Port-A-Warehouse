@@ -34,8 +34,6 @@ namespace Port_A_Warehouse {
         }
 
         private void CreateCratesPage() {
-            PalletsPage.Name = "Pallets";
-            PalletsPage.Color = Color.green;
             foreach (var crate in WarehouseData.Crates) {
                 CreateCratePage(crate);
             }
@@ -70,9 +68,6 @@ namespace Port_A_Warehouse {
         }
         private async void _RefreshThread() {
             PalletsPage.RemoveAll();
-            PalletsPage.Name = "DONT CLICK";
-            PalletsPage.Color = Color.red;
-
             WarehouseData.GenerateCratesData();
         }
 
@@ -81,25 +76,32 @@ namespace Port_A_Warehouse {
             Refresh();
         }
 
-        private void CreateCratePage<T>(T crate) where T : Crate {
+        private void CreateCratePage(Crate crate) {
             var pallet = crate.Pallet;
             var palletPage = PalletsPage.CreatePage($"{pallet._title}\n({pallet._barcode._id})", Color.green);
-            var typePage = palletPage.CreatePage(typeof(T).Name, Color.cyan);
+            var typePage = palletPage.CreatePage(crate.AssetType.Name, Color.cyan);
             var cratePage = typePage.CreatePage($"{crate._title}\n({crate._barcode._id})", Color.cyan);
-            cratePage.CreateFunction("Load Level", Color.white, () => LoadLevel(crate as LevelCrate));
-            cratePage.CreateFunction("Select Spawnable", Color.white, () => SelectSpawnable(crate as SpawnableCrate));
-            cratePage.CreateFunction("Swap Avatar", Color.white, () => SwapAvatar(crate as AvatarCrate));
+            cratePage.CreateFunction("Load Asset", Color.white, () => LoadCrateAsset(crate));
         }
 
-        public void LoadLevel(LevelCrate value) {
+        private void LoadCrateAsset(Crate crate) {
+            if (crate is LevelCrate)
+                LoadLevel(crate);
+            if (crate is AvatarCrate)
+                SwapAvatar(crate);
+            else if (crate is SpawnableCrate)
+                SelectSpawnable(crate);
+        }
+
+        public void LoadLevel(Crate value) {
             SceneStreamer.Load(value.Barcode);
         }
 
-        public void SelectSpawnable(SpawnableCrate value) {
-            SpawnGunPatch.SwapGlobalCrate(value);
+        public void SelectSpawnable(Crate value) {
+            SpawnGunPatch.SwapGlobalCrate(value as SpawnableCrate);
         }
 
-        public void SwapAvatar(AvatarCrate value) {
+        public void SwapAvatar(Crate value) {
             Player.RigManager.SwapAvatarCrate(value.Barcode);
         }
 

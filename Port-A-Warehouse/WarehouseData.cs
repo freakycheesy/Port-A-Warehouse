@@ -7,15 +7,11 @@ using MelonLoader;
 namespace Port_A_Warehouse {
     public static class WarehouseData {
         public static List<Crate> Crates = new();
+
         public static Action OnCratesGenerated;
-        public static Task Task {
-            get; private set;
-        }
         public static async void GenerateCratesData() {
-            if(Task != null) if (Task.Status == TaskStatus.Running) return;
-            try {              
-                Task = Task.Factory.StartNew(GenerateCrateDataTask);
-                await Task;
+            try {
+                GenerateCrateDataTask();
             }
             catch (Exception ex) {
                 MelonLogger.Error("ERROR", ex);
@@ -42,7 +38,7 @@ namespace Port_A_Warehouse {
                     Predicate<Crate> match = x => x._barcode._id.Contains(Core.SearchQuery, comparison) && Core.IncludeBarcodes || x._tags.Contains(Core.SearchQuery) && Core.IncludeTags || x._title.Contains(Core.SearchQuery, comparison) && Core.IncludeTitles || x.Pallet.Author.Contains(Core.SearchQuery, comparison) && Core.IncludeAuthors;
                     Crates = Crates.ToList().FindAll(match);
                 }
-                MelonLogger.Msg("Done Loading");
+
                 OnCratesGenerated?.Invoke();
                 MelonLogger.Msg("Generated Crates");
                 notification.Message = "Generated Crates";
