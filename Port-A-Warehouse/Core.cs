@@ -34,24 +34,17 @@ namespace Port_A_Warehouse {
         public override void OnInitializeMelon() {
             LoggerInstance.Msg("Initialized.");
             BoneMenuCreator();
-
-            Hooking.OnWarehouseReady += Hooking_OnWarehouseReady;
-        }
-
-        private void Hooking_OnWarehouseReady() {
-            Refresh();
         }
 
         private void BoneMenuCreator() {
             Page = Page.Root.CreatePage("Asset Warehouse", Color.red);
             Page.CreateFunction("Refresh", Color.green, Refresh);
-            CratePage.CreateString("Search Query", Color.green, searchquery, Search);
+            Page.CreateString("Search Query", Color.green, searchquery, Search);
             FitlerOptions();
             QueryOptions();
 
-            PalletPage = Page.CreatePage("Crates", Color.green);
+            PalletPage = Page.CreatePage("Pallets", Color.green);
             CratePage = Page.CreatePage("Crates", Color.cyan);
-            Refresh();
         }
 
         private static void QueryOptions() {
@@ -69,27 +62,46 @@ namespace Port_A_Warehouse {
             filters.CreateBool("Show Internal", Color.white, ShowInternal, (a) => ShowInternal = a);
             filters.CreateBool("Show Unlockable", Color.white, ShowUnlockable, (a) => ShowUnlockable = a);
         }
-
-        public static Thread RefreshThread;
+        public static Thread RefreshThread { get; private set; }
         public void Refresh() {
-            if (RefreshThread == null) {
-                RefreshThread = new Thread(_RefreshThread);
+            try {
+                RefreshThread ??= new ((a)=> GlobalHandler(_RefreshThread));
+                RefreshThread.IsBackground = true;
+                RefreshThread?.Start();
             }
-            if(RefreshThread.ThreadState != ThreadState.Running) RefreshThread?.Start();
+            catch (ThreadInterruptedException exception) {
+                MelonLogger.Error("[REFRESH] THREAD ERROR", exception);
+            }
         }
-
+        public static void GlobalHandler(ThreadStart threadStartTarget) {
+            try {
+                threadStartTarget.Invoke();
+            }
+            catch (Exception ex) {
+                MelonLogger.Error("[REFRESH] THREAD ERROR", ex);
+            }
+        }
         private void _RefreshThread() {
             ClearPages();
-            CreatePalletPages(PalletPage);
-            AddCrateElementsToPage(CratePage);
+            try {
+                AddCrateElementsToPage(CratePage);
+                CreatePalletPages(PalletPage);
+            }
+            catch (Exception exception) {
+                MelonLogger.Error("[REFRESH] REFRESH THREAD ERROR", exception);
+            }
         }
 
         private void AddCrateElementsToPage(Page page) {
-            
-            CreateCratePages(typeof(Crate).Name, "action", AssetWarehouse.Instance.GetCrates(), CratePage, out AllCratesPages);
-            CreateCratePages(typeof(SpawnableCrate).Name, "Select Spawnable", AssetWarehouse.Instance.GetCrates<SpawnableCrate>(), CratePage, out SpawnablesCratesPages);
-            CreateCratePages(typeof(LevelCrate).Name, "Load Level", AssetWarehouse.Instance.GetCrates<LevelCrate>(), CratePage, out LevelsCratesPages);
-            CreateCratePages(typeof(AvatarCrate).Name, "Swap Avatar", AssetWarehouse.Instance.GetCrates<AvatarCrate>(), CratePage, out AvatarsCratesPages);
+            try {
+                CreateCratePages(typeof(Crate).Name, "action", AssetWarehouse.Instance.GetCrates(), CratePage, out AllCratesPages);
+                CreateCratePages(typeof(SpawnableCrate).Name, "Select Spawnable", AssetWarehouse.Instance.GetCrates<SpawnableCrate>(), CratePage, out SpawnablesCratesPages);
+                CreateCratePages(typeof(LevelCrate).Name, "Load Level", AssetWarehouse.Instance.GetCrates<LevelCrate>(), CratePage, out LevelsCratesPages);
+                CreateCratePages(typeof(AvatarCrate).Name, "Swap Avatar", AssetWarehouse.Instance.GetCrates<AvatarCrate>(), CratePage, out AvatarsCratesPages);
+            }
+            catch (Exception exception) {
+                MelonLogger.Error("[REFRESH] Crate Elements Error", exception);
+            }
         }
 
         public void Search(string query) {
