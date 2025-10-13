@@ -81,23 +81,24 @@ namespace Port_A_Warehouse {
             var palletPage = PalletsPage.CreatePage($"{pallet._title}\n({pallet._barcode._id})", Color.green);
             var typePage = palletPage.CreatePage(typeof(T).Name, Color.white);
             var cratePage = typePage.CreatePage($"{crate._title}\n({crate._barcode._id})", Color.white);
-            cratePage.CreateFunction("Load Asset", Color.white, () => OnCrateClick(crate));
+            cratePage.CreateFunction("Load Level", Color.white, () => LoadLevel(crate));
+            cratePage.CreateFunction("Select Spawnable", Color.white, () => SelectSpawnable(crate));
+            cratePage.CreateFunction("Swap Avatar", Color.white, () => SwapAvatar(crate));
         }
 
-        private void OnCrateClick<T>(T c) where T : Crate {
-            Type crateType = typeof(T);
-            if (crateType == typeof(SpawnableCrate)) {
-                if (crateType == typeof(AvatarCrate)) {
-                    Player.RigManager.SwapAvatarCrate(c.Barcode);
-                    return;
-                }
-                SpawnGunPatch.SwapGlobalCrate(c as SpawnableCrate);
-                return;
-            }
-            if (crateType == typeof(LevelCrate)) {
-                SceneStreamer.Load(c.Barcode);
-                return;
-            }
+        public void LoadLevel(Crate value) {
+            if(value is LevelCrate)
+                SceneStreamer.Load(value.Barcode);
+        }
+
+        public void SelectSpawnable(Crate value) {
+            if (value is SpawnableCrate)
+                SpawnGunPatch.SwapGlobalCrate(value as SpawnableCrate);
+        }
+
+        public void SwapAvatar(Crate value) {
+            if (value is AvatarCrate)
+                Player.RigManager.SwapAvatarCrate(value.Barcode);
         }
 
         public static List<T> GetCleanList<T>(Il2CppSystem.Collections.Generic.List<T> dirtyList) {
