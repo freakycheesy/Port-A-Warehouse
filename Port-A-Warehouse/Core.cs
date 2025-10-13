@@ -75,10 +75,10 @@ namespace Port_A_Warehouse {
         }
 
         private void AddCrateElementsToPage(Page page) {
-            CreateCratePages(typeof(Crate).Name, "action", AssetWarehouse.Instance.GetCrates(), CratePage, out AllCratesPages);
-            CreateCratePages(typeof(SpawnableCrate).Name, "Select Spawnable", AssetWarehouse.Instance.GetCrates<SpawnableCrate>(), CratePage, out SpawnablesCratesPages);
-            CreateCratePages(typeof(LevelCrate).Name, "Load Level", AssetWarehouse.Instance.GetCrates<LevelCrate>(), CratePage, out LevelsCratesPages);
-            CreateCratePages(typeof(AvatarCrate).Name, "Swap Avatar", AssetWarehouse.Instance.GetCrates<AvatarCrate>(), CratePage, out AvatarsCratesPages);
+            CreateCratePages(typeof(Crate).Name, "action", AssetWarehouse.Instance.GetCrates(), page, out AllCratesPages);
+            CreateCratePages(typeof(SpawnableCrate).Name, "Select Spawnable", AssetWarehouse.Instance.GetCrates<SpawnableCrate>(), page, out SpawnablesCratesPages);
+            CreateCratePages(typeof(LevelCrate).Name, "Load Level", AssetWarehouse.Instance.GetCrates<LevelCrate>(), page, out LevelsCratesPages);
+            CreateCratePages(typeof(AvatarCrate).Name, "Swap Avatar", AssetWarehouse.Instance.GetCrates<AvatarCrate>(), page, out AvatarsCratesPages);
         }
 
         public void Search(string query) {
