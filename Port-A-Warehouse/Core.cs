@@ -81,6 +81,13 @@ namespace Port_A_Warehouse {
             CreateCratePages(typeof(AvatarCrate).Name, "Swap Avatar", AssetWarehouse.Instance.GetCrates<AvatarCrate>(), page, out AvatarsCratesPages);
         }
 
+        private void AddCrateElementsToPageFromPallet(Page page, Pallet pallet) {
+            CreateCratePages(typeof(Crate).Name, "action", pallet.Crates, page, out AllCratesPages);
+            CreateCratePages(typeof(SpawnableCrate).Name, "Select Spawnable", pallet.Crates, page, out SpawnablesCratesPages);
+            CreateCratePages(typeof(LevelCrate).Name, "Load Level", AssetWarehouse.Instance.GetCrates<LevelCrate>(), page, out LevelsCratesPages);
+            CreateCratePages(typeof(AvatarCrate).Name, "Swap Avatar", AssetWarehouse.Instance.GetCrates<AvatarCrate>(), page, out AvatarsCratesPages);
+        }
+
         public void Search(string query) {
             searchquery = query;
             Refresh();
@@ -101,7 +108,7 @@ namespace Port_A_Warehouse {
             }
             foreach (var p in selectedPallets) {
                 var palletPage = parentPage.CreatePage($"{p._title}\n({p._barcode._id})", Color.green);
-                AddCrateElementsToPage(palletPage);
+                AddCrateElementsToPageFromPallet(palletPage, p);
             }
         }
 
