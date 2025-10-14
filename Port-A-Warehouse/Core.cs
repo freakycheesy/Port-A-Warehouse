@@ -25,7 +25,7 @@ namespace Port_A_Warehouse {
         public static bool IncludeAuthors { get; set; } = true;
         public static bool IncludeTitles { get; set; } = true;
         public static bool CaseSensitive { get; set; } = false;
-        public static int MaxPalletResults { get; set; } = 10;
+        public const int MaxElements = 10;
         public static string SearchQuery;
         public override void OnInitializeMelon() {
             LoggerInstance.Msg("Initialized.");
@@ -52,10 +52,9 @@ namespace Port_A_Warehouse {
             Page = Page.Root.CreatePage("Asset Warehouse", Color.red);
             Page.CreateFunction("Refresh", Color.green, Refresh);
             Page.CreateString("Search Query", Color.green, SearchQuery, Search);
-            Page.CreateInt("Max Pallet Results", Color.white, MaxPalletResults, 1, 1, 255, (a) => MaxPalletResults = a);
             FitlerOptions();
             QueryOptions();
-            PalletsPage = Page.CreatePage("Pallets", Color.green, MaxPalletResults);
+            PalletsPage = Page.CreatePage("Pallets", Color.green, MaxElements);
         }
 
         private static void QueryOptions() {
@@ -88,13 +87,13 @@ namespace Port_A_Warehouse {
 
         private void CreateCratePage<T>(T crate) where T : Crate {
             var pallet = crate.Pallet;
-            var palletPage = PalletsPage.CreatePage($"{pallet._title}\n({pallet._barcode._id})", Color.green);
-            Page typePage = palletPage.CreatePage(crate.GetType().Name, Color.cyan);
-            var cratePage = typePage.CreatePage($"{crate._title}\n({crate._barcode._id})", Color.cyan);
-            cratePage.CreateFunction("Load Asset", Color.white, () => LoadCrateAsset(crate));
+            var palletPage = PalletsPage.CreatePage($"{pallet._title}\n({pallet._barcode._id})", Color.green, MaxElements);
+            Page typePage = palletPage.CreatePage(crate.GetType().Name, Color.cyan, MaxElements);
+            var cratePage = typePage.CreatePage($"{crate._title}\n({crate._barcode._id})", Color.cyan, MaxElements);
+            cratePage.CreateFunction("Try Use Crate", Color.white, () => UseCrate(crate));
         }
 
-        private void LoadCrateAsset(Crate crate) {
+        private void UseCrate(Crate crate) {
             if (crate is LevelCrate)
                 LoadLevel(crate);
             if (crate is AvatarCrate)

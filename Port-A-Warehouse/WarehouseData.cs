@@ -31,13 +31,10 @@ namespace Port_A_Warehouse {
                 notification.Message = "Generating Crates (DON'T ENTER PALLETS, GAME WILL CRASH)";
                 Notifier.Send(notification);
 
-                var RawCrates = AssetWarehouse.Instance.GetCrates();
-                Crates = RawCrates.ToList();
-                FilterAndCleanCrates(ref Crates);
-                var GameObjectCrates = Crates.Cast<GameObjectCrate>().ToList();
-                SpawnableCrates = GameObjectCrates.Cast<SpawnableCrate>().ToList();
-                AvatarCrates = SpawnableCrates.Cast<AvatarCrate>().ToList();
-                LevelCrates = Crates.Cast<LevelCrate>().ToList();
+                Crates = AssetWarehouse.Instance.GetCrates().ToList().FilterAndCleanCrates();
+                SpawnableCrates = AssetWarehouse.Instance.GetCrates<SpawnableCrate>().ToList().FilterAndCleanCrates();
+                AvatarCrates = AssetWarehouse.Instance.GetCrates<AvatarCrate>().ToList().FilterAndCleanCrates();
+                LevelCrates = AssetWarehouse.Instance.GetCrates<LevelCrate>().ToList().FilterAndCleanCrates();
 
                 OnCratesGenerated?.Invoke();
                 MelonLogger.Msg("Generated Crates");
@@ -47,17 +44,6 @@ namespace Port_A_Warehouse {
             catch (Exception ex) {
                 MelonLogger.Error("ERROR", ex);
             }
-        }
-
-        private static void FilterAndCleanCrates<T>(ref List<T> Crates) where T : Crate {
-            Crates.RemoveAll(x => x.Redacted && !Core.ShowRedacted);
-            Crates.RemoveAll(x => x.Pallet.Internal && !Core.ShowInternal);
-            Crates.RemoveAll(x => x.Unlockable && !Core.ShowUnlockable);
-            if (!Core.SearchQuery.IsNullOrEmpty()) {
-                var comparison = Core.CaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
-                Predicate<Crate> match = x => x._barcode._id.Contains(Core.SearchQuery, comparison) && Core.IncludeBarcodes || x._tags.Contains(Core.SearchQuery) && Core.IncludeTags || x._title.Contains(Core.SearchQuery, comparison) && Core.IncludeTitles || x.Pallet.Author.Contains(Core.SearchQuery, comparison) && Core.IncludeAuthors;
-                Crates = Crates.ToList().FindAll(match);
-            }
-        }
+        } 
     }
 }
