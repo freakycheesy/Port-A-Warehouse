@@ -7,9 +7,9 @@ using MelonLoader;
 namespace Port_A_Warehouse {
     public static class WarehouseData {
         public static List<Crate> Crates = new();
-        public static List<SpawnableCrate> ScCrates = new();
-        public static List<AvatarCrate> AcCrates = new();
-        public static List<LevelCrate> LcCrates = new();
+        public static List<LevelCrate> LevelCrates = new();
+        public static List<SpawnableCrate> SpawnableCrates = new();
+        public static List<AvatarCrate> AvatarCrates = new();
 
 
         public static Action OnCratesGenerated;
@@ -31,17 +31,13 @@ namespace Port_A_Warehouse {
                 notification.Message = "Generating Crates (DON'T ENTER PALLETS, GAME WILL CRASH)";
                 Notifier.Send(notification);
 
-                Crates = Core.GetCleanList(AssetWarehouse.Instance.GetCrates());
-                Crates = FilterAndCleanCrates(Crates);
-
-                ScCrates = Core.GetCleanList(AssetWarehouse.Instance.GetCrates<SpawnableCrate>());
-                ScCrates = FilterAndCleanCrates(ScCrates);
-
-                AcCrates = Core.GetCleanList(AssetWarehouse.Instance.GetCrates<AvatarCrate>());
-                AcCrates = FilterAndCleanCrates(AcCrates);
-
-                LcCrates = Core.GetCleanList(AssetWarehouse.Instance.GetCrates<LevelCrate>());
-                LcCrates = FilterAndCleanCrates(LcCrates);
+                var RawCrates = AssetWarehouse.Instance.GetCrates();
+                Crates = RawCrates.ToList();
+                FilterAndCleanCrates(ref Crates);
+                var GameObjectCrates = Crates.Cast<GameObjectCrate>().ToList();
+                SpawnableCrates = GameObjectCrates.Cast<SpawnableCrate>().ToList();
+                AvatarCrates = SpawnableCrates.Cast<AvatarCrate>().ToList();
+                LevelCrates = Crates.Cast<LevelCrate>().ToList();
 
                 OnCratesGenerated?.Invoke();
                 MelonLogger.Msg("Generated Crates");
@@ -53,10 +49,7 @@ namespace Port_A_Warehouse {
             }
         }
 
-        private static List<T> FilterAndCleanCrates<T>(List<T> Crates) where T : Crate {
-            Crates.Clear();
-
-            Crates = Core.GetCleanList(AssetWarehouse.Instance.GetCrates<T>());
+        private static void FilterAndCleanCrates<T>(ref List<T> Crates) where T : Crate {
             Crates.RemoveAll(x => x.Redacted && !Core.ShowRedacted);
             Crates.RemoveAll(x => x.Pallet.Internal && !Core.ShowInternal);
             Crates.RemoveAll(x => x.Unlockable && !Core.ShowUnlockable);
@@ -65,8 +58,6 @@ namespace Port_A_Warehouse {
                 Predicate<Crate> match = x => x._barcode._id.Contains(Core.SearchQuery, comparison) && Core.IncludeBarcodes || x._tags.Contains(Core.SearchQuery) && Core.IncludeTags || x._title.Contains(Core.SearchQuery, comparison) && Core.IncludeTitles || x.Pallet.Author.Contains(Core.SearchQuery, comparison) && Core.IncludeAuthors;
                 Crates = Crates.ToList().FindAll(match);
             }
-
-            return Crates;
         }
     }
 }

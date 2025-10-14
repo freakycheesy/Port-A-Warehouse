@@ -19,7 +19,7 @@
 			<HintPath>$(BONELAB_DIR)\MelonLoader\Il2CppAssemblies\Assembly-CSharp.dll</HintPath>
 		</Reference>
 		<Reference Include="BoneLib">
-		  <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\BONELAB\Mods\BoneLib.dll</HintPath>
+		  <HintPath>$(BONELAB_DIR)\Mods\BoneLib.dll</HintPath>
 		</Reference>
 		<Reference Include="Il2CppFacepunch.Steamworks.Win64">
 			<HintPath>$(BONELAB_DIR)\MelonLoader\Il2CppAssemblies\Il2CppFacepunch.Steamworks.Win64.dll</HintPath>
@@ -535,11 +535,13 @@
 
 	<ItemGroup>
 		<Compile Include="Core.cs" />
+		<Compile Include="Extensions.cs" />
 		<Compile Include="SpawnGunPatch.cs" />
 		<Compile Include="WarehouseData.cs" />
 	</ItemGroup>
 	
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<Exec Command="COPY &quot;$(TargetPath)&quot; &quot;$(BONELAB_DIR)\Mods\&quot;" />
 		<Exec Command="COPY &quot;$(TargetPath)&quot; &quot;$(BONELAB_DIR)\Mods\freakycheesy.portawarehouse\Mods\&quot;" />
 	</Target>
 </Project>
