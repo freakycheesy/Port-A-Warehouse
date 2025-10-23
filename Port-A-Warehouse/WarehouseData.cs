@@ -30,8 +30,6 @@ namespace Port_A_Warehouse {
                 notification.Title = "Port-A-Warehouse";
                 notification.Message = "Generating Crates (DON'T ENTER PALLETS, GAME WILL CRASH)";
                 Notifier.Send(notification);
-
-                Crates = AssetWarehouse.Instance.GetCrates().ToList().FilterAndCleanCrates();
                 SpawnableCrates = AssetWarehouse.Instance.GetCrates<SpawnableCrate>().ToList().FilterAndCleanCrates();
                 AvatarCrates = AssetWarehouse.Instance.GetCrates<AvatarCrate>().ToList().FilterAndCleanCrates();
                 LevelCrates = AssetWarehouse.Instance.GetCrates<LevelCrate>().ToList().FilterAndCleanCrates();

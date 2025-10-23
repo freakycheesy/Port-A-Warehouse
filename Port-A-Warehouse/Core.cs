@@ -30,13 +30,13 @@ namespace Port_A_Warehouse {
         public override void OnInitializeMelon() {
             LoggerInstance.Msg("Initialized.");
             WarehouseData.OnCratesGenerated += CreateCratesPage;
+            Hooking.OnLevelLoaded += (_) => RemovePallets();
+            Hooking.OnLevelUnloaded += RemovePallets;
+            Hooking.OnUIRigCreated += RemovePallets;
             BoneMenuCreator();
         }
 
         private void CreateCratesPage() {
-            foreach (var crate in WarehouseData.Crates) {
-                CreateCratePage(crate);
-            }
             foreach (var crate in WarehouseData.AvatarCrates) {
                 CreateCratePage(crate);
             }
@@ -76,8 +76,12 @@ namespace Port_A_Warehouse {
             _RefreshThread();
         }
         private async void _RefreshThread() {
-            PalletsPage.RemoveAll();
+            RemovePallets();
             WarehouseData.GenerateCratesData();
+        }
+
+        private static void RemovePallets() {
+            PalletsPage.RemoveAll();
         }
 
         public void Search(string query) {
@@ -90,10 +94,21 @@ namespace Port_A_Warehouse {
             var palletPage = PalletsPage.CreatePage($"{pallet._title}\n({pallet._barcode._id})", Color.green, MaxElements);
             Page typePage = palletPage.CreatePage(crate.GetType().Name, Color.cyan, MaxElements);
             var cratePage = typePage.CreatePage($"{crate._title}\n({crate._barcode._id})", Color.cyan, MaxElements);
-            cratePage.CreateFunction("Try Use Crate", Color.white, () => UseCrate(crate));
+            cratePage.CreateFunction(GetCrateActionName(crate), Color.white, () => UseCrate(crate));
         }
 
-        private void UseCrate(Crate crate) {
+        public string GetCrateActionName<T>(T crate) where T : Crate {
+            string name = string.Empty;
+            if (crate is LevelCrate)
+                name = "Load Level";
+            if (crate is AvatarCrate)
+                name = "Swap Avatar";
+            else if (crate is SpawnableCrate)
+                name = "Swap Spawn Gun Crate";
+            return name;
+        }
+
+        private void UseCrate<T>(T crate) where T : Crate {
             if (crate is LevelCrate)
                 LoadLevel(crate);
             if (crate is AvatarCrate)
