@@ -17,7 +17,6 @@ namespace Port_A_Warehouse {
         public static Page PalletsPage;
 
         public static bool ShowRedacted { get; set; } = true;
-        public static bool ShowInternal { get; set; } = true;
         public static bool ShowUnlockable { get; set; } = true;
 
         public static bool IncludeBarcodes { get; set; } = true;
@@ -40,12 +39,21 @@ namespace Port_A_Warehouse {
             foreach (var crate in WarehouseData.AvatarCrates) {
                 CreateCratePage(crate);
             }
-            foreach (var crate in WarehouseData.LevelCrates) {
-                CreateCratePage(crate);
-            }
             foreach (var crate in WarehouseData.SpawnableCrates) {
                 CreateCratePage(crate);
             }
+            foreach (var crate in WarehouseData.LevelCrates) {
+                CreateCratePage(crate);
+            }     
+        }
+
+        private void PlayDisc<T>(T disc) where T : MonoDisc {
+            var name = $"Music Player {disc.Barcode}";
+            AudioSource musicPlayer = GameObject.Find(name).GetComponent<AudioSource>();
+            musicPlayer ??= new GameObject(name).AddComponent<AudioSource>();
+            musicPlayer.clip = disc.AudioClip.Asset;
+            if(musicPlayer.isPlaying) musicPlayer.Stop();
+            else musicPlayer.Play();
         }
 
         private void BoneMenuCreator() {
@@ -69,7 +77,6 @@ namespace Port_A_Warehouse {
         private static void FitlerOptions() {
             var filters = Page.CreatePage("Filters", Color.white);
             filters.CreateBool("Show Redacted", Color.white, ShowRedacted, (a) => ShowRedacted = a);
-            filters.CreateBool("Show Internal", Color.white, ShowInternal, (a) => ShowInternal = a);
             filters.CreateBool("Show Unlockable", Color.white, ShowUnlockable, (a) => ShowUnlockable = a);
         }
         public void Refresh() {
