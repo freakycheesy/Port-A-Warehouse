@@ -49,7 +49,7 @@ namespace Port_A_Warehouse {
         }
 
         private void BoneMenuCreator() {
-            Page = Page.Root.CreatePage("Asset Warehouse", Color.red);
+            Page = Page.Root.CreatePage("Asset Warehouse", Color.red, MaxElements);
             Page.CreateFunction("Refresh", Color.green, Refresh);
             Page.CreateString("Search Query", Color.green, SearchQuery, Search);
             FitlerOptions();
@@ -90,11 +90,15 @@ namespace Port_A_Warehouse {
         }
 
         private void CreateCratePage<T>(T crate) where T : Crate {
+            var allCrates = PalletsPage.CreatePage("All Loaded Crates", Color.cyan, MaxElements);
+
             var pallet = crate.Pallet;
             var palletPage = PalletsPage.CreatePage($"{pallet._title}\n({pallet._barcode._id})", Color.green, MaxElements);
-            Page typePage = palletPage.CreatePage(crate.GetType().Name, Color.cyan, MaxElements);
-            var cratePage = typePage.CreatePage($"{crate._title}\n({crate._barcode._id})", Color.cyan, MaxElements);
+            Page typePage = palletPage.CreatePage(crate.GetType().Name, Color.magenta, MaxElements);
+            var cratePage = typePage.CreatePage($"{crate._title}\n({crate._barcode._id})", Color.magenta, MaxElements);
             cratePage.CreateFunction(GetCrateActionName(crate), Color.white, () => UseCrate(crate));
+
+            allCrates.CreatePageLink(cratePage);
         }
 
         public string GetCrateActionName<T>(T crate) where T : Crate {
@@ -109,6 +113,7 @@ namespace Port_A_Warehouse {
         }
 
         private void UseCrate<T>(T crate) where T : Crate {
+            MelonLogger.Msg($"Trying to Activate Crate: {crate.Barcode}({crate.GetType().FullName})");
             if (crate is LevelCrate)
                 LoadLevel(crate);
             if (crate is AvatarCrate)
@@ -118,17 +123,14 @@ namespace Port_A_Warehouse {
         }
 
         public void LoadLevel(Crate value) {
-            MelonLogger.Msg("Trying to Load Scene");
             SceneStreamer.Load(value.Barcode);
         }
 
         public void SelectSpawnable(Crate value) {
-            MelonLogger.Msg("Trying to Select Spawnable");
             SpawnGunPatch.SwapGlobalCrate(value as SpawnableCrate);
         }
 
         public void SwapAvatar(Crate value) {
-            MelonLogger.Msg("Trying to Swap Avatar");
             Player.RigManager.SwapAvatarCrate(value.Barcode);
         }
     }
