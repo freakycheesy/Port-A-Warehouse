@@ -15,8 +15,10 @@ namespace Port_A_Warehouse {
     public class Core : MelonMod {
         public static Page Page;
         public static Page PalletsPage;
+        public static Page CratesPage;
 
         public static bool ShowRedacted { get; set; } = true;
+        public static bool ShowInternal { get; set; } = true;
         public static bool ShowUnlockable { get; set; } = true;
 
         public static bool IncludeBarcodes { get; set; } = true;
@@ -39,30 +41,22 @@ namespace Port_A_Warehouse {
             foreach (var crate in WarehouseData.AvatarCrates) {
                 CreateCratePage(crate);
             }
+            foreach (var crate in WarehouseData.LevelCrates) {
+                CreateCratePage(crate);
+            }
             foreach (var crate in WarehouseData.SpawnableCrates) {
                 CreateCratePage(crate);
             }
-            foreach (var crate in WarehouseData.LevelCrates) {
-                CreateCratePage(crate);
-            }     
-        }
-
-        private void PlayDisc<T>(T disc) where T : MonoDisc {
-            var name = $"Music Player {disc.Barcode}";
-            AudioSource musicPlayer = GameObject.Find(name).GetComponent<AudioSource>();
-            musicPlayer ??= new GameObject(name).AddComponent<AudioSource>();
-            musicPlayer.clip = disc.AudioClip.Asset;
-            if(musicPlayer.isPlaying) musicPlayer.Stop();
-            else musicPlayer.Play();
         }
 
         private void BoneMenuCreator() {
-            Page = Page.Root.CreatePage("Asset Warehouse", Color.red, MaxElements);
+            Page = Page.Root.CreatePage("Asset Warehouse", Color.red);
             Page.CreateFunction("Refresh", Color.green, Refresh);
             Page.CreateString("Search Query", Color.green, SearchQuery, Search);
             FitlerOptions();
             QueryOptions();
             PalletsPage = Page.CreatePage("Pallets", Color.green, MaxElements);
+            CratesPage = Page.CreatePage("Crates", Color.blue, MaxElements);
         }
 
         private static void QueryOptions() {
@@ -77,6 +71,7 @@ namespace Port_A_Warehouse {
         private static void FitlerOptions() {
             var filters = Page.CreatePage("Filters", Color.white);
             filters.CreateBool("Show Redacted", Color.white, ShowRedacted, (a) => ShowRedacted = a);
+            filters.CreateBool("Show Internal", Color.white, ShowInternal, (a) => ShowInternal = a);
             filters.CreateBool("Show Unlockable", Color.white, ShowUnlockable, (a) => ShowUnlockable = a);
         }
         public void Refresh() {
@@ -89,6 +84,7 @@ namespace Port_A_Warehouse {
 
         private static void RemovePallets() {
             PalletsPage.RemoveAll();
+            CratesPage.RemoveAll();
         }
 
         public void Search(string query) {
@@ -97,15 +93,15 @@ namespace Port_A_Warehouse {
         }
 
         private void CreateCratePage<T>(T crate) where T : Crate {
-            var allCrates = PalletsPage.CreatePage("All Loaded Crates", Color.cyan, MaxElements);
-
             var pallet = crate.Pallet;
-            var palletPage = PalletsPage.CreatePage($"{pallet._title}\n({pallet._barcode._id})", Color.green, MaxElements);
-            Page typePage = palletPage.CreatePage(crate.GetType().Name, Color.magenta, MaxElements);
-            var cratePage = typePage.CreatePage($"{crate._title}\n({crate._barcode._id})", Color.magenta, MaxElements);
+            var palletspage = PalletsPage.CreatePage("Loaded", Color.green, MaxElements);
+            var palletPage = palletspage.CreatePage($"{pallet._title}\n({pallet._barcode._id})", Color.green, MaxElements);
+            Page typePage = palletPage.CreatePage(crate.GetType().Name, Color.cyan, MaxElements);
+            var cratePage = typePage.CreatePage($"{crate._title}\n({crate._barcode._id})", Color.cyan, MaxElements);
             cratePage.CreateFunction(GetCrateActionName(crate), Color.white, () => UseCrate(crate));
 
-            allCrates.CreatePageLink(cratePage);
+            var crateTypePage = CratesPage.CreatePage(crate.GetType().Name, Color.cyan, MaxElements);
+            crateTypePage.CreatePageLink(cratePage);
         }
 
         public string GetCrateActionName<T>(T crate) where T : Crate {
@@ -120,7 +116,6 @@ namespace Port_A_Warehouse {
         }
 
         private void UseCrate<T>(T crate) where T : Crate {
-            MelonLogger.Msg($"Trying to Activate Crate: {crate.Barcode}({crate.GetType().FullName})");
             if (crate is LevelCrate)
                 LoadLevel(crate);
             if (crate is AvatarCrate)
@@ -130,14 +125,17 @@ namespace Port_A_Warehouse {
         }
 
         public void LoadLevel(Crate value) {
+            MelonLogger.Msg("Trying to Load Scene");
             SceneStreamer.Load(value.Barcode);
         }
 
         public void SelectSpawnable(Crate value) {
-            SpawnGunPatch.SwapGlobalCrate(value as SpawnableCrate);
+            MelonLogger.Msg("Trying to Select Spawnable");
+            SpawnGunPatch.SwapSpawnGunCrate(value as SpawnableCrate);
         }
 
         public void SwapAvatar(Crate value) {
+            MelonLogger.Msg("Trying to Swap Avatar");
             Player.RigManager.SwapAvatarCrate(value.Barcode);
         }
     }
